@@ -76,8 +76,6 @@
 // ShaderToy Common
 //
 
-#define R iResolution.xy
-
 //useful functions
 #define GS(x) exp(-dot(x,x))
 #define GS0(x) exp(-length(x))
@@ -121,7 +119,6 @@ vec3 PD(vec2 x, vec2 pos)
 
 
 #define iFrame FRAMEINDEX
-#define iResolution RENDERSIZE
 #define U gl_FragColor
 
 
@@ -133,9 +130,9 @@ float sdBox( in vec2 p, in vec2 b )
 
 float border(vec2 p)
 {
-    float bound = -sdBox(p - R*0.5, R*vec2(0.49, 0.49));
-    float box = sdBox((p - R*vec2(0.5, 0.6)) , R*vec2(0.05, 0.01));
-    float drain = -sdBox(p - R*vec2(0.5, 0.7), R*vec2(0.0, 0.0));
+    float bound = -sdBox(p - RENDERSIZE*0.5, RENDERSIZE*vec2(0.49, 0.49));
+    float box = sdBox((p - RENDERSIZE*vec2(0.5, 0.6)) , RENDERSIZE*vec2(0.05, 0.01));
+    float drain = -sdBox(p - RENDERSIZE*vec2(0.5, 0.7), RENDERSIZE*vec2(0.0, 0.0));
     return bound;
 }
 
@@ -178,10 +175,10 @@ void main()
         range(i, -1, 1) range(j, -1, 1)
         {
             vec2 tpos = position + vec2(i,j);
-            vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(tpos, R)), 0);
+            vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
             vec2 X0 = POST_UNPACK(data.xy) + tpos;
-            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, R)), 0).xy);
+            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, RENDERSIZE)), 0).xy);
            	int M0 = int(data.z);
             int M0H = M0/2;
 
@@ -210,7 +207,7 @@ void main()
         if (iFrame < 1 || restart) {
             X = position;
             V = vec2(0.);
-            M = Ha(position - (R*0.5 - R.x*0.15))*Hb((R*0.5 + R.x*0.15) - position);
+            M = Ha(position - (RENDERSIZE*0.5 - RENDERSIZE.x*0.15))*Hb((RENDERSIZE*0.5 + RENDERSIZE.x*0.15) - position);
         }
 
         if (PASSINDEX == 0) {
@@ -222,11 +219,11 @@ void main()
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
     {
-        vec2 uv = position/R;
+        vec2 uv = position/RENDERSIZE;
 
-        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(position, R)), 0);
+        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(position, RENDERSIZE)), 0);
         vec2 X = POST_UNPACK(data.xy) + position;
-        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(position, R)), 0).xy);
+        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(position, RENDERSIZE)), 0).xy);
         float M = data.z;
 
         if(M != 0.) //not vacuum
@@ -236,10 +233,10 @@ void main()
             range(i, -2, 2) range(j, -2, 2)
             {
                 vec2 tpos = position + vec2(i,j);
-                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
+                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
                 vec2 X0 = POST_UNPACK(data.xy) + tpos;
-                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(tpos, R)), 0).xy);
+                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(tpos, RENDERSIZE)), 0).xy);
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
@@ -292,10 +289,10 @@ void main()
         range(i, -2, 2) range(j, -2, 2)
         {
             vec2 tpos = floor(position) + vec2(i,j);
-            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
+            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
             vec2 X0 = POST_UNPACK(data.xy) + tpos;
-            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, R)), 0).xy);
+            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, RENDERSIZE)), 0).xy);
             float M0 = data.z;
             vec2 dx = X0 - position;
 
