@@ -181,15 +181,13 @@ void main()
         }
 
         //normalization
-        if(M != 0.)
-        {
+        if (M != 0.) {
             X /= M;
             V /= M;
         }
 
         //initial condition
-        if(iFrame < 1 || restart)
-        {
+        if (iFrame < 1 || restart) {
             X = pos;
             V = vec2(0.);
             M = Ha(pos - (R*0.5 - R.x*0.15))*Hb((R*0.5 + R.x*0.15) - pos);
