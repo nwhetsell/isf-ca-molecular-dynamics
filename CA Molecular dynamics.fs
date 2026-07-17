@@ -167,10 +167,11 @@ void main()
         for (int i = -2; i <= 2; i++)
         for (int j = -2; j <= 2; j++) {
             vec2 translatedPosition = position + vec2(i,j);
-            vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(translatedPosition, RENDERSIZE)), 0);
+            vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
+            vec4 data = IMG_PIXEL(bufferB_positionAndMass, wrappedPosition);
 
             vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
-            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(translatedPosition, RENDERSIZE)), 0).xy);
+            vec2 V0 = POST_UNPACK(IMG_PIXEL(bufferB_velocity, wrappedPosition).xy);
            	int M0 = int(data.z);
             int M0H = M0/2;
 
@@ -211,9 +212,10 @@ void main()
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
     {
-        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(position, RENDERSIZE)), 0);
+        vec2 wrappedPosition = mod(position, RENDERSIZE);
+        vec4 data = IMG_PIXEL(bufferA_positionAndMass, wrappedPosition);
         vec2 X = POST_UNPACK(data.xy) + position;
-        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(position, RENDERSIZE)), 0).xy);
+        vec2 V = POST_UNPACK(IMG_PIXEL(bufferA_velocity, wrappedPosition).xy);
         float M = data.z;
 
         if(M != 0.) //not vacuum
@@ -224,10 +226,10 @@ void main()
             for (int j = -2; j <= 2; j++) {
                 vec2 translatedPosition = position + vec2(i,j);
                 vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
-                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(wrappedPosition), 0);
+                vec4 data = IMG_PIXEL(bufferA_positionAndMass, wrappedPosition);
 
                 vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
-                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(wrappedPosition), 0).xy);
+                vec2 V0 = POST_UNPACK(IMG_PIXEL(bufferA_velocity, wrappedPosition).xy);
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
@@ -281,10 +283,10 @@ void main()
         for (int j = -2; j <= 2; j++) {
             vec2 translatedPosition = floor(position) + vec2(i,j);
             vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
-            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(wrappedPosition), 0);
+            vec4 data = IMG_PIXEL(bufferA_positionAndMass, wrappedPosition);
 
             vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
-            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(wrappedPosition), 0).xy);
+            vec2 V0 = POST_UNPACK(IMG_PIXEL(bufferB_velocity, wrappedPosition).xy);
             float M0 = data.z;
             vec2 dx = X0 - position;
 
