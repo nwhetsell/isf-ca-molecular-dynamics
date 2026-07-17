@@ -213,8 +213,6 @@ void main()
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
     {
-        vec2 uv = position/RENDERSIZE;
-
         vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(position, RENDERSIZE)), 0);
         vec2 X = POST_UNPACK(data.xy) + position;
         vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(position, RENDERSIZE)), 0).xy);
