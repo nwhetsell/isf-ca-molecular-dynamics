@@ -120,7 +120,6 @@ vec3 PD(vec2 x, vec2 pos)
 #define PRE_PACK(X) clamp(0.5 * X + 0.5, 0., 1.)
 
 
-#define pos gl_FragCoord.xy
 #define iFrame FRAMEINDEX
 #define iResolution RENDERSIZE
 #define U gl_FragColor
@@ -165,10 +164,10 @@ vec3 hsv2rgb( in vec3 c )
 
 void main()
 {
+    vec2 position = gl_FragCoord.xy;
+
     if (PASSINDEX == 0 || PASSINDEX == 1) // ShaderToy Buffer A
     {
-        ivec2 p = ivec2(pos);
-
         vec2 X = vec2(0);
         vec2 V = vec2(0);
         float M = 0.;
@@ -178,7 +177,7 @@ void main()
         //this makes the tracking conservative
         range(i, -1, 1) range(j, -1, 1)
         {
-            vec2 tpos = pos + vec2(i,j);
+            vec2 tpos = position + vec2(i,j);
             vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(tpos, R)), 0);
 
             vec2 X0 = POST_UNPACK(data.xy) + tpos;
@@ -190,8 +189,8 @@ void main()
 
             //the deposited mass into this cell
             vec3 m = (M0 >= 2)?
-                (float(M0H)*PD(X0+vec2(0.5, 0.0), pos) + float(M0 - M0H)*PD(X0-vec2(0.5, 0.0), pos))
-                :(float(M0)*PD(X0, pos));
+                (float(M0H)*PD(X0+vec2(0.5, 0.0), position) + float(M0 - M0H)*PD(X0-vec2(0.5, 0.0), position))
+                :(float(M0)*PD(X0, position));
 
             //add weighted by mass
             X += m.xy;
@@ -209,13 +208,13 @@ void main()
 
         //initial condition
         if (iFrame < 1 || restart) {
-            X = pos;
+            X = position;
             V = vec2(0.);
-            M = Ha(pos - (R*0.5 - R.x*0.15))*Hb((R*0.5 + R.x*0.15) - pos);
+            M = Ha(position - (R*0.5 - R.x*0.15))*Hb((R*0.5 + R.x*0.15) - position);
         }
 
         if (PASSINDEX == 0) {
-            X = X - pos;
+            X = X - position;
             U = vec4(PRE_PACK(X), M, 1.);
         } else {
             U = vec4(PRE_PACK(V), 0., 1.);
@@ -223,12 +222,11 @@ void main()
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
     {
-        vec2 uv = pos/R;
-        ivec2 p = ivec2(pos);
+        vec2 uv = position/R;
 
-        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(pos, R)), 0);
-        vec2 X = POST_UNPACK(data.xy) + pos;
-        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(pos, R)), 0).xy);
+        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(position, R)), 0);
+        vec2 X = POST_UNPACK(data.xy) + position;
+        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(position, R)), 0).xy);
         float M = data.z;
 
         if(M != 0.) //not vacuum
@@ -237,7 +235,7 @@ void main()
             vec2 Fa = vec2(0.);
             range(i, -2, 2) range(j, -2, 2)
             {
-                vec2 tpos = pos + vec2(i,j);
+                vec2 tpos = position + vec2(i,j);
                 vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
 
                 vec2 X0 = POST_UNPACK(data.xy) + tpos;
@@ -274,7 +272,7 @@ void main()
 
         //save
         if (PASSINDEX == 2) {
-            X = X - pos;
+            X = X - position;
             U = vec4(PRE_PACK(X), M, 1.);
         } else {
             U = vec4(PRE_PACK(V), 0., 1.);
@@ -293,13 +291,13 @@ void main()
         //compute the smoothed density and velocity
         range(i, -2, 2) range(j, -2, 2)
         {
-            vec2 tpos = floor(pos) + vec2(i,j);
+            vec2 tpos = floor(position) + vec2(i,j);
             vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
 
             vec2 X0 = POST_UNPACK(data.xy) + tpos;
             vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, R)), 0).xy);
             float M0 = data.z;
-            vec2 dx = X0 - pos;
+            vec2 dx = X0 - position;
 
 #define radius 1.0
             float K = GS(dx/radius)/(radius*radius);
