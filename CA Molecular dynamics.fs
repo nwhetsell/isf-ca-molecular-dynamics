@@ -110,16 +110,10 @@ vec3 PD(vec2 x, vec2 pos)
     return vec3(x, 1.0)*Ha(x - (pos - 0.5))*Hb((pos + 0.5) - x);
 }
 
-//particle grid
-
 
 //data packing
 #define POST_UNPACK(X) (clamp(X, 0., 1.) * 2. - 1.)
 #define PRE_PACK(X) clamp(0.5 * X + 0.5, 0., 1.)
-
-
-#define iFrame FRAMEINDEX
-#define U gl_FragColor
 
 
 float sdBox( in vec2 p, in vec2 b )
@@ -204,7 +198,7 @@ void main()
         }
 
         //initial condition
-        if (iFrame < 1 || restart) {
+        if (FRAMEINDEX < 1 || restart) {
             X = position;
             V = vec2(0.);
             M = Ha(position - (RENDERSIZE*0.5 - RENDERSIZE.x*0.15))*Hb((RENDERSIZE*0.5 + RENDERSIZE.x*0.15) - position);
@@ -212,9 +206,9 @@ void main()
 
         if (PASSINDEX == 0) {
             X = X - position;
-            U = vec4(PRE_PACK(X), M, 1.);
+            gl_FragColor = vec4(PRE_PACK(X), M, 1.);
         } else {
-            U = vec4(PRE_PACK(V), 0., 1.);
+            gl_FragColor = vec4(PRE_PACK(V), 0., 1.);
         }
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
@@ -270,9 +264,9 @@ void main()
         //save
         if (PASSINDEX == 2) {
             X = X - position;
-            U = vec4(PRE_PACK(X), M, 1.);
+            gl_FragColor = vec4(PRE_PACK(X), M, 1.);
         } else {
-            U = vec4(PRE_PACK(V), 0., 1.);
+            gl_FragColor = vec4(PRE_PACK(V), 0., 1.);
         }
     }
     else // ShaderToy Image
