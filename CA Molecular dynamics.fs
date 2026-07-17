@@ -19,12 +19,22 @@
     "ISFVSN": "2",
     "PASSES": [
         {
-            "TARGET": "bufferA",
+            "TARGET": "bufferA_positionAndMass",
             "PERSISTENT": true,
             "FLOAT": true
         },
         {
-            "TARGET": "bufferB",
+            "TARGET": "bufferA_velocity",
+            "PERSISTENT": true,
+            "FLOAT": true
+        },
+        {
+            "TARGET": "bufferB_positionAndMass",
+            "PERSISTENT": true,
+            "FLOAT": true
+        },
+        {
+            "TARGET": "bufferB_velocity",
             "PERSISTENT": true,
             "FLOAT": true
         },
@@ -85,21 +95,8 @@ vec3 PD(vec2 x, vec2 pos)
 
 
 //data packing
-#define PACK(X) ( uint(round(65534.0*X.x)) + \
-           65535u*uint(round(65534.0*X.y)) )
-
-#define UNPACK(X) vec2(X%65535u, X/65535u)/65534.0
-
-#ifdef VIDEOSYNC
-uint floatBitsToUint(float x);
-float uintBitsToFloat(uint x);
-#endif
-
 #define POST_UNPACK(X) (clamp(X, 0., 1.) * 2. - 1.)
-#define DECODE(X) POST_UNPACK(UNPACK(floatBitsToUint(X)))
-
 #define PRE_PACK(X) clamp(0.5 * X + 0.5, 0., 1.)
-#define ENCODE(X) uintBitsToFloat(PACK(PRE_PACK(X)))
 
 
 #define pos gl_FragCoord.xy
@@ -147,7 +144,7 @@ vec3 hsv2rgb( in vec3 c )
 
 void main()
 {
-    if (PASSINDEX == 0) // ShaderToy Buffer A
+    if (PASSINDEX == 0 || PASSINDEX == 1) // ShaderToy Buffer A
     {
         ivec2 p = ivec2(pos);
 
@@ -161,10 +158,10 @@ void main()
         range(i, -1, 1) range(j, -1, 1)
         {
             vec2 tpos = pos + vec2(i,j);
-            vec4 data = texelFetch(bufferB, ivec2(mod(tpos, R)), 0);
+            vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(tpos, R)), 0);
 
-            vec2 X0 = DECODE(data.x) + tpos;
-           	vec2 V0 = DECODE(data.y);
+            vec2 X0 = POST_UNPACK(data.xy) + tpos;
+            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, R)), 0).xy);
            	int M0 = int(data.z);
             int M0H = M0/2;
 
@@ -196,17 +193,21 @@ void main()
             M = Ha(pos - (R*0.5 - R.x*0.15))*Hb((R*0.5 + R.x*0.15) - pos);
         }
 
-        X = X - pos;
-        U = vec4(ENCODE(X), ENCODE(V), M, 0.);
+        if (PASSINDEX == 0) {
+            X = X - pos;
+            U = vec4(PRE_PACK(X), M, 1.);
+        } else {
+            U = vec4(PRE_PACK(V), 0., 1.);
+        }
     }
-    else if (PASSINDEX == 1) // ShaderToy Buffer B
+    else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
     {
         vec2 uv = pos/R;
         ivec2 p = ivec2(pos);
 
-        vec4 data = texelFetch(bufferA, ivec2(mod(pos, R)), 0);
-        vec2 X = DECODE(data.x) + pos;
-        vec2 V = DECODE(data.y);
+        vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(pos, R)), 0);
+        vec2 X = POST_UNPACK(data.xy) + pos;
+        vec2 V = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(pos, R)), 0).xy);
         float M = data.z;
 
         if(M != 0.) //not vacuum
@@ -216,10 +217,10 @@ void main()
             range(i, -2, 2) range(j, -2, 2)
             {
                 vec2 tpos = pos + vec2(i,j);
-                vec4 data = texelFetch(bufferA, ivec2(mod(tpos, R)), 0);
+                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
 
-                vec2 X0 = DECODE(data.x) + tpos;
-                vec2 V0 = DECODE(data.y);
+                vec2 X0 = POST_UNPACK(data.xy) + tpos;
+                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(tpos, R)), 0).xy);
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
@@ -251,8 +252,12 @@ void main()
         }
 
         //save
-        X = X - pos;
-        U = vec4(ENCODE(X), ENCODE(V), M, 0.);
+        if (PASSINDEX == 2) {
+            X = X - pos;
+            U = vec4(PRE_PACK(X), M, 1.);
+        } else {
+            U = vec4(PRE_PACK(V), 0., 1.);
+        }
     }
     else // ShaderToy Image
     {
@@ -268,10 +273,10 @@ void main()
         range(i, -2, 2) range(j, -2, 2)
         {
             vec2 tpos = floor(pos) + vec2(i,j);
-            vec4 data = texelFetch(bufferB, ivec2(mod(tpos, R)), 0);
+            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, R)), 0);
 
-            vec2 X0 = DECODE(data.x) + tpos;
-            vec2 V0 = DECODE(data.y);
+            vec2 X0 = POST_UNPACK(data.xy) + tpos;
+            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(tpos, R)), 0).xy);
             float M0 = data.z;
             vec2 dx = X0 - pos;
 
