@@ -82,8 +82,6 @@
 #define CI(x) smoothstep(1.0, 0.9, length(x))
 #define Dir(ang) vec2(cos(ang), sin(ang))
 #define Rot(ang) mat2(cos(ang), sin(ang), -sin(ang), cos(ang))
-#define loop(i,x) for(int i = 0; i < x; i++)
-#define range(i,a,b) for(int i = a; i <= b; i++)
 
 
 //MD force
@@ -166,8 +164,8 @@ void main()
         //basically integral over all updated neighbor distributions
         //that fall inside of this pixel
         //this makes the tracking conservative
-        range(i, -1, 1) range(j, -1, 1)
-        {
+        for (int i = -2; i <= 2; i++)
+        for (int j = -2; j <= 2; j++) {
             vec2 tpos = position + vec2(i,j);
             vec4 data = texelFetch(bufferB_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
@@ -222,8 +220,8 @@ void main()
         {
             //Compute the force
             vec2 Fa = vec2(0.);
-            range(i, -2, 2) range(j, -2, 2)
-            {
+            for (int i = -2; i <= 2; i++)
+            for (int j = -2; j <= 2; j++) {
                 vec2 tpos = position + vec2(i,j);
                 vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
@@ -278,8 +276,8 @@ void main()
         vec2 vel = vec2(0., 0.);
 
         //compute the smoothed density and velocity
-        range(i, -2, 2) range(j, -2, 2)
-        {
+        for (int i = -2; i <= 2; i++)
+        for (int j = -2; j <= 2; j++) {
             vec2 tpos = floor(position) + vec2(i,j);
             vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(tpos, RENDERSIZE)), 0);
 
