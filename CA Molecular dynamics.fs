@@ -42,10 +42,6 @@
 // ShaderToy Common
 //
 
-#define T(p) texelFetch(iChannel0, ivec2(mod(p,R)), 0)
-#define T_B(p) texelFetch(bufferA, ivec2(mod(p,R)), 0)
-#define P(p) texture(iChannel0, mod(p,R)/R)
-
 #define dt 0.5
 #define R iResolution.xy
 
@@ -162,8 +158,7 @@ void main()
         range(i, -1, 1) range(j, -1, 1)
         {
             vec2 tpos = pos + vec2(i,j);
-#define iChannel0 bufferB
-            vec4 data = T(tpos);
+            vec4 data = texelFetch(bufferB, ivec2(mod(tpos, R)), 0);
 
             vec2 X0 = DECODE(data.x) + tpos;
            	vec2 V0 = DECODE(data.y);
@@ -208,7 +203,7 @@ void main()
         vec2 uv = pos/R;
         ivec2 p = ivec2(pos);
 
-        vec4 data = T_B(pos);
+        vec4 data = texelFetch(bufferA, ivec2(mod(pos, R)), 0);
         vec2 X = DECODE(data.x) + pos;
         vec2 V = DECODE(data.y);
         float M = data.z;
@@ -220,7 +215,7 @@ void main()
             range(i, -2, 2) range(j, -2, 2)
             {
                 vec2 tpos = pos + vec2(i,j);
-                vec4 data = T_B(tpos);
+                vec4 data = texelFetch(bufferA, ivec2(mod(tpos, R)), 0);
 
                 vec2 X0 = DECODE(data.x) + tpos;
                 vec2 V0 = DECODE(data.y);
@@ -272,7 +267,7 @@ void main()
         range(i, -2, 2) range(j, -2, 2)
         {
             vec2 tpos = floor(pos) + vec2(i,j);
-            vec4 data = T(tpos);
+            vec4 data = texelFetch(bufferB, ivec2(mod(tpos, R)), 0);
 
             vec2 X0 = DECODE(data.x) + tpos;
             vec2 V0 = DECODE(data.y);
