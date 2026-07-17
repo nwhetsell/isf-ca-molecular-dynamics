@@ -11,9 +11,33 @@
             "TYPE" : "image"
         },
         {
+            "NAME": "inputImageAmount",
+            "LABEL": "Input image amount",
+            "TYPE": "float",
+            "DEFAULT": 0,
+            "MIN": 0,
+            "MAX": 1
+        },
+        {
             "NAME": "restart",
             "LABEL": "Restart",
             "TYPE": "event"
+        },
+        {
+            "NAME": "dt",
+            "LABEL": "Simulation speed",
+            "TYPE": "float",
+            "DEFAULT": 0.5,
+            "MAX": 10,
+            "MIN": 0
+        },
+        {
+            "NAME": "cooling",
+            "LABEL": "Cooling",
+            "TYPE": "float",
+            "DEFAULT": 1.5,
+            "MAX": 10,
+            "MIN": -10
         }
     ],
     "ISFVSN": "2",
@@ -52,7 +76,6 @@
 // ShaderToy Common
 //
 
-#define dt 0.5
 #define R iResolution.xy
 
 //useful functions
@@ -64,8 +87,6 @@
 #define loop(i,x) for(int i = 0; i < x; i++)
 #define range(i,a,b) for(int i = a; i <= b; i++)
 
-//Wyatt thermostat
-#define cooling 1.5
 
 //MD force
 float MF(vec2 dx)
