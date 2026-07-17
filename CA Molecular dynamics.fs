@@ -223,10 +223,11 @@ void main()
             for (int i = -2; i <= 2; i++)
             for (int j = -2; j <= 2; j++) {
                 vec2 translatedPosition = position + vec2(i,j);
-                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(translatedPosition, RENDERSIZE)), 0);
+                vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
+                vec4 data = texelFetch(bufferA_positionAndMass, ivec2(wrappedPosition), 0);
 
                 vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
-                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(mod(translatedPosition, RENDERSIZE)), 0).xy);
+                vec2 V0 = POST_UNPACK(texelFetch(bufferA_velocity, ivec2(wrappedPosition), 0).xy);
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
@@ -279,10 +280,11 @@ void main()
         for (int i = -2; i <= 2; i++)
         for (int j = -2; j <= 2; j++) {
             vec2 translatedPosition = floor(position) + vec2(i,j);
-            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(mod(translatedPosition, RENDERSIZE)), 0);
+            vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
+            vec4 data = texelFetch(bufferA_positionAndMass, ivec2(wrappedPosition), 0);
 
             vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
-            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(mod(translatedPosition, RENDERSIZE)), 0).xy);
+            vec2 V0 = POST_UNPACK(texelFetch(bufferB_velocity, ivec2(wrappedPosition), 0).xy);
             float M0 = data.z;
             vec2 dx = X0 - position;
 
