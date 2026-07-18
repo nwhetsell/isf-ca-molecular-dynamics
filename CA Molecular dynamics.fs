@@ -68,8 +68,12 @@
     ]
 }*/
 
+#define INV_SQRT_2 0.7071067811865475244008443621048
+
 // Constants and functions from LYGIA <https://github.com/patriciogonzalezvivo/lygia>
 #define PI 3.1415926535897932384626433832795
+
+float gaussian( vec2 d, float s) { return exp(-( d.x*d.x + d.y*d.y) / (2.0 * s*s)); }
 
 float luminance(in vec3 linear) { return dot(linear, vec3(0.21250175, 0.71537574, 0.07212251)); }
 float luminance(in vec4 linear) { return luminance( linear.rgb ); }
@@ -79,14 +83,10 @@ float luminance(in vec4 linear) { return luminance( linear.rgb ); }
 // ShaderToy Common
 //
 
-//useful functions
-#define GS(x) exp(-dot(x,x))
-
-
 //MD force
 float MF(vec2 dx)
 {
-    return -GS(0.75*dx) + 0.13*GS(0.4*dx);
+    return -gaussian(0.75 * dx, INV_SQRT_2) + 0.13 * gaussian(0.4 * dx, INV_SQRT_2);
 }
 
 
@@ -291,7 +291,7 @@ void main()
             vec2 dx = X0 - position;
 
 #define radius 1.0
-            float K = GS(dx/radius)/(radius*radius);
+            float K = gaussian(dx / radius, radius * INV_SQRT_2);
             rho += M0*K;
             vel += M0*K*V0;
         }
