@@ -38,6 +38,22 @@
             "DEFAULT": 1.5,
             "MAX": 10,
             "MIN": -10
+        },
+        {
+            "NAME": "radius",
+            "LABEL": "Smoothing radius",
+            "TYPE": "float",
+            "DEFAULT": 1,
+            "MAX": 20,
+            "MIN": 0
+        },
+        {
+            "NAME": "velocityContribution",
+            "LABEL": "Velocity color contribution",
+            "TYPE": "float",
+            "DEFAULT": 0,
+            "MAX": 10,
+            "MIN": 0
         }
     ],
     "ISFVSN": "2",
@@ -72,6 +88,7 @@
 
 // Constants and functions from LYGIA <https://github.com/patriciogonzalezvivo/lygia>
 #define PI 3.1415926535897932384626433832795
+#define TWO_PI 6.2831853071795864769252867665590
 
 float gaussian( vec2 d, float s) { return exp(-( d.x*d.x + d.y*d.y) / (2.0 * s*s)); }
 
@@ -93,59 +110,66 @@ float luminance(in vec4 linear) { return luminance( linear.rgb ); }
 // ShaderToy Common
 //
 
-//MD force
+// MD force
 float MF(vec2 dx)
 {
     return -gaussian(0.75 * dx, INV_SQRT_2) + 0.13 * gaussian(0.4 * dx, INV_SQRT_2);
 }
 
 
-//the step functions need to be exactly like this!! step(x,0) does not work!
+// The step functions need to be exactly like this!! step(x,0) does not work!
 float Ha(vec2 x)
 {
-    return ((x.x >= 0.)?1.:0.)*((x.y >= 0.)?1.:0.);
+    return ((x.x >= 0.) ? 1. : 0.) * ((x.y >= 0.) ? 1. : 0.);
 }
 
 float Hb(vec2 x)
 {
-    return ((x.x > 0.)?1.:0.)*((x.y > 0.)?1.:0.);
+    return ((x.x >  0.) ? 1. : 0.) * ((x.y >  0.) ? 1. : 0.);
 }
 
-//particle distribution
+// Particle distribution
 vec3 PD(vec2 x, vec2 pos)
 {
-    return vec3(x, 1.0)*Ha(x - (pos - 0.5))*Hb((pos + 0.5) - x);
+    return vec3(x, 1) * Ha(x - (pos - 0.5)) * Hb((pos + 0.5) - x);
 }
 
 
-//data packing
+// The ShaderToy shader uses the functions `floatBitsToUint` and
+// `uintBitsToFloat` to pack more than 4 floats (5 in this case) into a
+// 4-component pixel. These functions are available in GLSL v3.30 (OpenGL v3.3)
+// and later, but some ISF hosts (notably Videosync) use GLSL v1.50
+// (OpenGL v3.2). We can work around this by effectively running one of the
+// ShaderToy buffers twice, but the packing operations in the ShaderToy shader
+// also perform a `clamp` on the packed data. Without the `clamp` calls, this
+// shader seems to blow up numerically.
 #define POST_UNPACK(X) (clamp(X, 0., 1.) * 2. - 1.)
 #define PRE_PACK(X) clamp(0.5 * X + 0.5, 0., 1.)
 
 
 float sdBox( in vec2 p, in vec2 b )
 {
-    vec2 d = abs(p)-b;
-    return length(max(d,0.0)) + min(max(d.x,d.y),0.0);
+    vec2 d = abs(p) - b;
+    return length(max(d, 0.)) + min(max(d.x, d.y), 0.);
 }
 
 float border(vec2 p)
 {
-    float bound = -sdBox(p - RENDERSIZE*0.5, RENDERSIZE*vec2(0.49, 0.49));
-    float box = sdBox((p - RENDERSIZE*vec2(0.5, 0.6)) , RENDERSIZE*vec2(0.05, 0.01));
-    float drain = -sdBox(p - RENDERSIZE*vec2(0.5, 0.7), RENDERSIZE*vec2(0.0, 0.0));
+    float bound = -sdBox(p - RENDERSIZE * 0.5, RENDERSIZE * vec2(0.49, 0.49));
+    float box = sdBox((p - RENDERSIZE * vec2(0.5, 0.6)), RENDERSIZE * vec2(0.05, 0.01));
+    float drain = -sdBox(p - RENDERSIZE * vec2(0.5, 0.7), RENDERSIZE * vec2(0));
     return bound;
 }
 
 #define h 1.
 vec3 bN(vec2 p)
 {
-    vec3 dx = vec3(-h,0,h);
-    vec4 idx = vec4(-1./h, 0., 1./h, 0.25);
-    vec3 r = idx.zyw*border(p + dx.zy)
-           + idx.xyw*border(p + dx.xy)
-           + idx.yzw*border(p + dx.yz)
-           + idx.yxw*border(p + dx.yx);
+    vec3 dx = vec3(-h, 0, h);
+    vec4 idx = vec4(-1./h, 0, 1./h, 0.25);
+    vec3 r = idx.zyw * border(p + dx.zy) +
+             idx.xyw * border(p + dx.xy) +
+             idx.yzw * border(p + dx.yz) +
+             idx.yxw * border(p + dx.yx);
     return vec3(normalize(r.xy), r.z + 1e-4);
 }
 
@@ -160,32 +184,31 @@ void main()
         vec2 V = vec2(0);
         float M = 0.;
 
-        //basically integral over all updated neighbor distributions
-        //that fall inside of this pixel
-        //this makes the tracking conservative
+        // Basically integrate over all updated neighbor distributions that fall
+        // inside of this pixel. This makes the tracking conservative.
         for (int i = -2; i <= 2; i++)
         for (int j = -2; j <= 2; j++) {
-            vec2 translatedPosition = position + vec2(i,j);
+            vec2 translatedPosition = position + vec2(i, j);
             vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
             vec4 data = IMG_PIXEL(bufferB_positionAndMass, wrappedPosition);
 
             vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
             vec2 V0 = POST_UNPACK(IMG_PIXEL(bufferB_velocity, wrappedPosition).xy);
            	int M0 = int(data.z);
-            int M0H = M0/2;
+            int M0H = M0 / 2;
 
-            X0 += V0*dt; //integrate position
+            X0 += V0 * dt; // Integrate position
 
-            //the deposited mass into this cell
-            vec3 m = (M0 >= 2)?
-                (float(M0H)*PD(X0+vec2(0.5, 0.0), position) + float(M0 - M0H)*PD(X0-vec2(0.5, 0.0), position))
-                :(float(M0)*PD(X0, position));
+            // Deposited mass into this cell
+            vec3 m = (M0 >= 2) ?
+                     (float(M0H) * PD(X0 + vec2(0.5, 0), position) + float(M0 - M0H) * PD(X0 - vec2(0.5, 0), position)) :
+                     (float(M0)  * PD(X0, position));
 
-            //add weighted by mass
+            // Add weighted by mass
             X += m.xy;
-            V += V0*m.z;
+            V += V0 * m.z;
 
-            //add mass
+            // Add mass
             M += m.z;
         }
 
@@ -205,9 +228,9 @@ void main()
 
         if (PASSINDEX == 0) {
             X = X - position;
-            gl_FragColor = vec4(PRE_PACK(X), M, 1.);
+            gl_FragColor = vec4(PRE_PACK(X), M, 1);
         } else {
-            gl_FragColor = vec4(PRE_PACK(V), 0., 1.);
+            gl_FragColor = vec4(PRE_PACK(V), 0, 1);
         }
     }
     else if (PASSINDEX == 2 || PASSINDEX == 3) // ShaderToy Buffer B
@@ -218,13 +241,13 @@ void main()
         vec2 V = POST_UNPACK(IMG_PIXEL(bufferA_velocity, wrappedPosition).xy);
         float M = data.z;
 
-        if(M != 0.) //not vacuum
-        {
-            //Compute the force
-            vec2 Fa = vec2(0.);
+        if (M != 0.) { // Not vacuum
+            // Compute the force
+            vec2 Fa = vec2(0);
+
             for (int i = -2; i <= 2; i++)
             for (int j = -2; j <= 2; j++) {
-                vec2 translatedPosition = position + vec2(i,j);
+                vec2 translatedPosition = position + vec2(i, j);
                 vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
                 vec4 data = IMG_PIXEL(bufferA_positionAndMass, wrappedPosition);
 
@@ -233,55 +256,51 @@ void main()
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
-                Fa += M0*MF(dx)*dx;
+                Fa += M0 * MF(dx)  *dx;
             }
 
-            vec2 F = vec2(0.);
-            // if(iMouse.z > 0.)
-            // {
+            vec2 F = vec2(0);
+            // if (iMouse.z > 0.) {
             //     vec2 dx= pos - iMouse.xy;
-            //         F -= 0.003*dx*GS(dx/30.);
+            //     F -= 0.003 * dx * gaussian(dx/30., INV_SQRT_2);
             // }
 
-           	//gravity
-            F += 0.001*vec2(0,-1);
+           	// Gravity
+            F += 0.001 * vec2(0, -1);
 
-            //integrate velocity
-            V += (F + Fa)*dt/M;
+            // Integrate velocity
+            V += (F + Fa) * dt / M;
 
-            //Wyatt thermostat
-            X += cooling*Fa*dt/M;
+            // Wyatt thermostat
+            X += cooling * Fa * dt / M;
 
             vec3 BORD = bN(X);
-            V += 0.5*smoothstep(0., 5., -BORD.z)*BORD.xy;
+            V += 0.5 * smoothstep(0., 5., -BORD.z) * BORD.xy;
 
-            //velocity limit
+            // Velocity limit
             float v = length(V);
-            V /= (v > 1.)?1.*v:1.;
+            if (v > 1.) {
+                V /= v;
+            }
         }
 
         //save
         if (PASSINDEX == 2) {
             X = X - position;
-            gl_FragColor = vec4(PRE_PACK(X), M, 1.);
+            gl_FragColor = vec4(PRE_PACK(X), M, 1);
         } else {
-            gl_FragColor = vec4(PRE_PACK(V), 0., 1.);
+            gl_FragColor = vec4(PRE_PACK(V), 0, 1);
         }
     }
     else // ShaderToy Image
     {
-        //zoom in
-        // if(isKeyPressed(KEY_SPACE))
-        // {
-        //    	pos = iMouse.xy + pos*zoom - R*zoom*0.5;
-        // }
         float rho = 0.001;
-        vec2 vel = vec2(0., 0.);
+        vec2 vel = vec2(0);
 
-        //compute the smoothed density and velocity
+        // Compute the smoothed density and velocity
         for (int i = -2; i <= 2; i++)
         for (int j = -2; j <= 2; j++) {
-            vec2 translatedPosition = floor(position) + vec2(i,j);
+            vec2 translatedPosition = floor(position) + vec2(i, j);
             vec2 wrappedPosition = mod(translatedPosition, RENDERSIZE);
             vec4 data = IMG_PIXEL(bufferA_positionAndMass, wrappedPosition);
 
@@ -290,14 +309,13 @@ void main()
             float M0 = data.z;
             vec2 dx = X0 - position;
 
-#define radius 1.0
             float K = gaussian(dx / radius, radius * INV_SQRT_2);
-            rho += M0*K;
-            vel += M0*K*V0;
+            rho += M0 * K;
+            vel += M0 * K * V0;
         }
 
         vel /= rho;
-        vec3 vc = hsv2rgb(vec3(6.*atan(vel.x, vel.y)/(2.*PI), 1.0, rho*length(vel.xy)));
-        gl_FragColor.xyz = cos(0.9*vec3(3,2,1)*rho) + 0.*vc;
+        vec3 vc = hsv2rgb(vec3(6. * atan(vel.x, vel.y) / TWO_PI, 1, rho * length(vel.xy)));
+        gl_FragColor.rgb = cos(0.9 * vec3(3,2,1) * rho) + velocityContribution * vc;
     }
 }
