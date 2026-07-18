@@ -4,7 +4,7 @@
         "Generator"
     ],
     "CREDIT": "Mykhailo Moroz <https://www.shadertoy.com/user/michael0884>",
-    "DESCRIPTION": "Random slime mold generator, converted from <https://www.shadertoy.com/view/3s3cWr>",
+    "DESCRIPTION": "Cellular automaton molecular dynamics, converted from <https://www.shadertoy.com/view/3s3cWr>",
     "INPUTS": [
         {
             "NAME" : "inputImage",
