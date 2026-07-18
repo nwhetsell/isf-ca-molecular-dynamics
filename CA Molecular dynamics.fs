@@ -78,10 +78,6 @@
 
 //useful functions
 #define GS(x) exp(-dot(x,x))
-#define GS0(x) exp(-length(x))
-#define CI(x) smoothstep(1.0, 0.9, length(x))
-#define Dir(ang) vec2(cos(ang), sin(ang))
-#define Rot(ang) mat2(cos(ang), sin(ang), -sin(ang), cos(ang))
 
 
 //MD force
