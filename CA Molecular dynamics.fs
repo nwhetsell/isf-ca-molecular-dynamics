@@ -71,6 +71,9 @@
 // Constants and functions from LYGIA <https://github.com/patriciogonzalezvivo/lygia>
 #define PI 3.1415926535897932384626433832795
 
+float luminance(in vec3 linear) { return dot(linear, vec3(0.21250175, 0.71537574, 0.07212251)); }
+float luminance(in vec4 linear) { return luminance( linear.rgb ); }
+
 
 //
 // ShaderToy Common
@@ -195,8 +198,9 @@ void main()
         //initial condition
         if (FRAMEINDEX < 1 || restart) {
             X = position;
-            V = vec2(0.);
-            M = Ha(position - (RENDERSIZE*0.5 - RENDERSIZE.x*0.15))*Hb((RENDERSIZE*0.5 + RENDERSIZE.x*0.15) - position);
+            V = vec2(0);
+            M = (1. - inputImageAmount) * Ha(position - (RENDERSIZE*0.5 - RENDERSIZE.x*0.15))*Hb((RENDERSIZE*0.5 + RENDERSIZE.x*0.15) - position) +
+                inputImageAmount * luminance(IMG_PIXEL(inputImage, position));
         }
 
         if (PASSINDEX == 0) {
