@@ -256,7 +256,7 @@ void main()
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
-                Fa += M0 * MF(dx)  *dx;
+                Fa += M0 * MF(dx) * dx;
             }
 
             vec2 F = vec2(0);
