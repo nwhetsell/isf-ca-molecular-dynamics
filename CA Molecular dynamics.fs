@@ -32,12 +32,36 @@
             "MIN": 0
         },
         {
+            "NAME": "gravityDirection",
+            "LABEL": "Gravity direction",
+            "TYPE": "point2D",
+            "DEFAULT": [0, -1],
+            "MIN": [-1, -1],
+            "MAX": [1, 1]
+        },
+        {
+            "NAME": "gravityScale",
+            "LABEL": "Gravity scale",
+            "TYPE": "float",
+            "DEFAULT": 0.001,
+            "MAX": 1,
+            "MIN": 0
+        },
+        {
             "NAME": "cooling",
             "LABEL": "Cooling",
             "TYPE": "float",
             "DEFAULT": 1.5,
             "MAX": 10,
             "MIN": -10
+        },
+        {
+            "NAME": "maxSpeed",
+            "LABEL": "Maximum speed",
+            "TYPE": "float",
+            "DEFAULT": 1,
+            "MAX": 10,
+            "MIN": 0
         },
         {
             "NAME": "radius",
@@ -116,7 +140,6 @@ float MF(vec2 dx)
     return -gaussian(0.75 * dx, INV_SQRT_2) + 0.13 * gaussian(0.4 * dx, INV_SQRT_2);
 }
 
-
 // The step functions need to be exactly like this!! step(x,0) does not work!
 float Ha(vec2 x)
 {
@@ -139,10 +162,10 @@ vec3 PD(vec2 x, vec2 pos)
 // `uintBitsToFloat` to pack more than 4 floats (5 in this case) into a
 // 4-component pixel. These functions are available in GLSL v3.30 (OpenGL v3.3)
 // and later, but some ISF hosts (notably Videosync) use GLSL v1.50
-// (OpenGL v3.2). We can work around this by effectively running one of the
-// ShaderToy buffers twice, but the packing operations in the ShaderToy shader
-// also perform a `clamp` on the packed data. Without the `clamp` calls, this
-// shader seems to blow up numerically.
+// (OpenGL v3.2). We can work around this by effectively running ShaderToy
+// buffers twice, but the packing operations in the ShaderToy shader also
+// perform a `clamp` on the packed data. Without the `clamp` calls, this shader
+// seems to blow up numerically.
 #define POST_UNPACK(X) (clamp(X, 0., 1.) * 2. - 1.)
 #define PRE_PACK(X) clamp(0.5 * X + 0.5, 0., 1.)
 
@@ -159,18 +182,6 @@ float border(vec2 p)
     float box = sdBox((p - RENDERSIZE * vec2(0.5, 0.6)), RENDERSIZE * vec2(0.05, 0.01));
     float drain = -sdBox(p - RENDERSIZE * vec2(0.5, 0.7), RENDERSIZE * vec2(0));
     return bound;
-}
-
-#define h 1.
-vec3 bN(vec2 p)
-{
-    vec3 dx = vec3(-h, 0, h);
-    vec4 idx = vec4(-1./h, 0, 1./h, 0.25);
-    vec3 r = idx.zyw * border(p + dx.zy) +
-             idx.xyw * border(p + dx.xy) +
-             idx.yzw * border(p + dx.yz) +
-             idx.yxw * border(p + dx.yx);
-    return vec3(normalize(r.xy), r.z + 1e-4);
 }
 
 
@@ -212,13 +223,13 @@ void main()
             M += m.z;
         }
 
-        //normalization
+        // Normalization
         if (M != 0.) {
             X /= M;
             V /= M;
         }
 
-        //initial condition
+        // Initial condition
         if (FRAMEINDEX < 1 || restart) {
             X = position;
             V = vec2(0);
@@ -266,7 +277,7 @@ void main()
             // }
 
            	// Gravity
-            F += 0.001 * vec2(0, -1);
+            F += gravityScale * gravityDirection;
 
             // Integrate velocity
             V += (F + Fa) * dt / M;
@@ -274,17 +285,21 @@ void main()
             // Wyatt thermostat
             X += cooling * Fa * dt / M;
 
-            vec3 BORD = bN(X);
+#define h 1.
+            vec3 r = vec3( 1./h,     0, 0.25) * border(X + vec2( h,  0)) +
+                     vec3(-1./h,     0, 0.25) * border(X + vec2(-h,  0)) +
+                     vec3(    0,  1./h, 0.25) * border(X + vec2( 0,  h)) +
+                     vec3(    0, -1./h, 0.25) * border(X + vec2( 0, -h));
+            vec3 BORD = vec3(normalize(r.xy), r.z + 1e-4);
             V += 0.5 * smoothstep(0., 5., -BORD.z) * BORD.xy;
 
             // Velocity limit
             float v = length(V);
-            if (v > 1.) {
+            if (v > maxSpeed) {
                 V /= v;
             }
         }
 
-        //save
         if (PASSINDEX == 2) {
             X = X - position;
             gl_FragColor = vec4(PRE_PACK(X), M, 1);
@@ -316,6 +331,6 @@ void main()
 
         vel /= rho;
         vec3 vc = hsv2rgb(vec3(6. * atan(vel.x, vel.y) / TWO_PI, 1, rho * length(vel.xy)));
-        gl_FragColor.rgb = cos(0.9 * vec3(3,2,1) * rho) + velocityContribution * vc;
+        gl_FragColor.rgb = cos(0.9 * vec3(3, 2, 1) * rho) + velocityContribution * vc;
     }
 }
