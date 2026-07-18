@@ -75,6 +75,16 @@
 
 float gaussian( vec2 d, float s) { return exp(-( d.x*d.x + d.y*d.y) / (2.0 * s*s)); }
 
+#define saturate(V) clamp(V, 0.0, 1.0)
+vec3 hue2rgb(const in float hue) {
+    float R = abs(hue * 6.0 - 3.0) - 1.0;
+    float G = 2.0 - abs(hue * 6.0 - 2.0);
+    float B = 2.0 - abs(hue * 6.0 - 4.0);
+    return saturate(vec3(R,G,B));
+}
+vec3 hsv2rgb(const in vec3 hsv) { return ((hue2rgb(hsv.x) - 1.0) * hsv.y + 1.0) * hsv.z; }
+vec4 hsv2rgb(const in vec4 hsv) { return vec4(hsv2rgb(hsv.rgb), hsv.a); }
+
 float luminance(in vec3 linear) { return dot(linear, vec3(0.21250175, 0.71537574, 0.07212251)); }
 float luminance(in vec4 linear) { return luminance( linear.rgb ); }
 
@@ -137,16 +147,6 @@ vec3 bN(vec2 p)
            + idx.yzw*border(p + dx.yz)
            + idx.yxw*border(p + dx.yx);
     return vec3(normalize(r.xy), r.z + 1e-4);
-}
-
-
-vec3 hsv2rgb( in vec3 c )
-{
-    vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
-
-	rgb = rgb*rgb*(3.0-2.0*rgb); // cubic smoothing
-
-	return c.z * mix( vec3(1.0), rgb, c.y);
 }
 
 
