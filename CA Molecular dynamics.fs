@@ -24,6 +24,19 @@
             "TYPE": "event"
         },
         {
+            "NAME": "enableMouse",
+            "LABEL": "Enable mouse",
+            "TYPE": "bool",
+            "DEFAULT": false
+        },
+        {
+            "NAME": "mouse",
+            "TYPE": "point2D",
+            "DEFAULT": [0.5, 0.5],
+            "MIN": [0, 0],
+            "MAX": [1, 1]
+        },
+        {
             "NAME": "dt",
             "LABEL": "Simulation speed",
             "TYPE": "float",
@@ -281,10 +294,10 @@ void main()
             }
 
             vec2 F = vec2(0);
-            // if (iMouse.z > 0.) {
-            //     vec2 dx = pos - iMouse.xy;
-            //     F -= 0.003 * dx * gaussian(dx / 30., INV_SQRT_2);
-            // }
+            if (enableMouse) {
+                vec2 dx = position - mouse * RENDERSIZE;
+                F -= 0.003 * dx * gaussian(dx / 30., INV_SQRT_2);
+            }
 
            	// Gravity
             F += gravityScale * gravityDirection;
