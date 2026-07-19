@@ -168,12 +168,10 @@ float scalarReflectedStep(vec2 x) // Hb in ShaderToy
     return r.x * r.y;
 }
 
-// Particle distribution
 vec3 particleDistribution(vec2 x, vec2 pos, vec2 offset)
 {
     return vec3(x, 1) * scalarStep(x - (pos - offset)) * scalarReflectedStep((pos + offset) - x);
 }
-
 vec3 particleDistribution(vec2 x, vec2 pos)
 {
     return particleDistribution(x, pos, vec2(0.5));
