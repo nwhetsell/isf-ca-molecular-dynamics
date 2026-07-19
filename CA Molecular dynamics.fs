@@ -134,21 +134,22 @@ float luminance(in vec4 linear) { return luminance( linear.rgb ); }
 // ShaderToy Common
 //
 
-// The step functions need to be exactly like this!! step(x,0) does not work!
-float Ha(vec2 x)
+float scalarStep(vec2 x) // Ha in ShaderToy
 {
-    return ((x.x >= 0.) ? 1. : 0.) * ((x.y >= 0.) ? 1. : 0.);
+    vec2 r = step(0., x);
+    return r.x * r.y;
 }
 
-float Hb(vec2 x)
+float scalarReflectedStep(vec2 x) // Hb in ShaderToy
 {
-    return ((x.x >  0.) ? 1. : 0.) * ((x.y >  0.) ? 1. : 0.);
+    vec2 r = vec2(1) - step(x, vec2(0));
+    return r.x * r.y;
 }
 
 // Particle distribution
 vec3 PD(vec2 x, vec2 pos)
 {
-    return vec3(x, 1) * Ha(x - (pos - 0.5)) * Hb((pos + 0.5) - x);
+    return vec3(x, 1) * scalarStep(x - (pos - 0.5)) * scalarReflectedStep((pos + 0.5) - x);
 }
 
 
@@ -227,8 +228,11 @@ void main()
         if (FRAMEINDEX < 1 || restart) {
             X = position;
             V = vec2(0);
-            M = (1. - inputImageAmount) * Ha(position - (RENDERSIZE*0.5 - RENDERSIZE.x*0.15))*Hb((RENDERSIZE*0.5 + RENDERSIZE.x*0.15) - position) +
-                inputImageAmount * luminance(IMG_PIXEL(inputImage, position));
+            M = mix(
+                scalarStep(position - (RENDERSIZE * 0.5 - RENDERSIZE.x * 0.15)) * scalarReflectedStep((RENDERSIZE * 0.5 + RENDERSIZE.x * 0.15) - position),
+                luminance(IMG_PIXEL(inputImage, position)),
+                inputImageAmount
+            );
         }
 
         if (PASSINDEX == 0) {
