@@ -282,8 +282,8 @@ void main()
 
             vec2 F = vec2(0);
             // if (iMouse.z > 0.) {
-            //     vec2 dx= pos - iMouse.xy;
-            //     F -= 0.003 * dx * gaussian(dx/30., INV_SQRT_2);
+            //     vec2 dx = pos - iMouse.xy;
+            //     F -= 0.003 * dx * gaussian(dx / 30., INV_SQRT_2);
             // }
 
            	// Gravity
