@@ -209,14 +209,18 @@ void main()
             vec2 X0 = POST_UNPACK(data.xy) + translatedPosition;
             vec2 V0 = POST_UNPACK(IMG_PIXEL(bufferB_velocity, wrappedPosition).xy);
            	int M0 = int(data.z);
-            int M0H = M0 / 2;
 
             X0 += V0 * dt; // Integrate position
 
             // Deposited mass into this cell
-            vec3 m = (M0 >= 2) ?
-                     (float(M0H) * particleDistribution(X0 + vec2(0.5, 0), position) + float(M0 - M0H) * particleDistribution(X0 - vec2(0.5, 0), position)) :
-                     (float(M0)  * particleDistribution(X0, position));
+            vec3 m;
+            if (M0 >= 2) {
+                int halfM0 = M0 / 2;
+                m = float(halfM0)      * particleDistribution(X0 + vec2(0.5, 0), position) +
+                    float(M0 - halfM0) * particleDistribution(X0 - vec2(0.5, 0), position);
+            } else {
+                m = float(M0) * particleDistribution(X0, position);
+            }
 
             // Add weighted by mass
             X += m.xy;
