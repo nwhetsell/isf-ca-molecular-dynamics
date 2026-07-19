@@ -147,9 +147,14 @@ float scalarReflectedStep(vec2 x) // Hb in ShaderToy
 }
 
 // Particle distribution
-vec3 PD(vec2 x, vec2 pos)
+vec3 particleDistribution(vec2 x, vec2 pos, vec2 offset)
 {
-    return vec3(x, 1) * scalarStep(x - (pos - 0.5)) * scalarReflectedStep((pos + 0.5) - x);
+    return vec3(x, 1) * scalarStep(x - (pos - offset)) * scalarReflectedStep((pos + offset) - x);
+}
+
+vec3 particleDistribution(vec2 x, vec2 pos)
+{
+    return particleDistribution(x, pos, vec2(0.5));
 }
 
 
@@ -207,8 +212,8 @@ void main()
 
             // Deposited mass into this cell
             vec3 m = (M0 >= 2) ?
-                     (float(M0H) * PD(X0 + vec2(0.5, 0), position) + float(M0 - M0H) * PD(X0 - vec2(0.5, 0), position)) :
-                     (float(M0)  * PD(X0, position));
+                     (float(M0H) * particleDistribution(X0 + vec2(0.5, 0), position) + float(M0 - M0H) * particleDistribution(X0 - vec2(0.5, 0), position)) :
+                     (float(M0)  * particleDistribution(X0, position));
 
             // Add weighted by mass
             X += m.xy;
@@ -229,7 +234,7 @@ void main()
             X = position;
             V = vec2(0);
             M = mix(
-                scalarStep(position - (RENDERSIZE * 0.5 - RENDERSIZE.x * 0.15)) * scalarReflectedStep((RENDERSIZE * 0.5 + RENDERSIZE.x * 0.15) - position),
+                particleDistribution(position, RENDERSIZE * 0.5, vec2(RENDERSIZE.x * 0.15)).z,
                 luminance(IMG_PIXEL(inputImage, position)),
                 inputImageAmount
             );
