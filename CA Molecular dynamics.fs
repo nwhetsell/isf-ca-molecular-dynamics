@@ -134,12 +134,6 @@ float luminance(in vec4 linear) { return luminance( linear.rgb ); }
 // ShaderToy Common
 //
 
-// MD force
-float MF(vec2 dx)
-{
-    return -gaussian(0.75 * dx, INV_SQRT_2) + 0.13 * gaussian(0.4 * dx, INV_SQRT_2);
-}
-
 // The step functions need to be exactly like this!! step(x,0) does not work!
 float Ha(vec2 x)
 {
@@ -267,7 +261,7 @@ void main()
                 float M0 = data.z;
                 vec2 dx = X0 - X;
 
-                Fa += M0 * MF(dx) * dx;
+                Fa += M0 * (-gaussian(0.75 * dx, INV_SQRT_2) + 0.13 * gaussian(0.4 * dx, INV_SQRT_2)) * dx;
             }
 
             vec2 F = vec2(0);
